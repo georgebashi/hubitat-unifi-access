@@ -1,6 +1,12 @@
-
-# Beads / Dolt files (added by bd init)
-.dolt/
-*.db
-.beads-credential-key
-.beads/proxieddb/
+.secrets/
+.env
+.env.*
+!.env.example
+.tools/
+.DS_Store
+*.class
+build/
+__pycache__/
+*.pyc
+.beads/issues.jsonl
+.beads/interactions.jsonl

@@ -1,0 +1,14 @@
+{
+  "author": "George B",
+  "gitHubUrl": "https://github.com/georgebashi/hubitat-unifi-access",
+  "packages": [
+    {
+      "id": "00056837-5af9-4fd0-8647-b6721bc8c7da",
+      "name": "UniFi Access",
+      "category": "Integrations",
+      "tags": ["LAN", "Doors & Windows", "Safety & Security"],
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/main/packageManifest.json",
+      "description": "Discover and monitor physical UniFi Access hardware in Hubitat, with supported door, gate, reader, doorbell, and emergency controls."
+    }
+  ]
+}

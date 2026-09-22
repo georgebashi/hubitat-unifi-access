@@ -1,0 +1,66 @@
+{
+  "packageName": "UniFi Access",
+  "minimumHEVersion": "2.5.1.183",
+  "author": "George B",
+  "version": "0.1.0",
+  "dateReleased": "2026-09-22",
+  "licenseFile": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/LICENSE",
+  "releaseNotes": "Initial release for installed UniFi Access hardware, door and gate controls, events, and emergency status. See the README for supported operations and validation limits.",
+  "documentationLink": "https://github.com/georgebashi/hubitat-unifi-access#readme",
+  "category": "Integrations",
+  "tags": ["LAN", "Doors & Windows", "Safety & Security"],
+  "apps": [
+    {
+      "id": "5436494b-015f-435a-8b16-7e0961e0407c",
+      "name": "UniFi Access",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/apps/UnifiAccess.groovy",
+      "required": true,
+      "oauth": true
+    }
+  ],
+  "drivers": [
+    {
+      "id": "b197c77e-38d4-4286-910a-75c9888d5eed",
+      "name": "UniFi Access Door",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessDoor.groovy",
+      "required": true
+    },
+    {
+      "id": "322826ed-e10c-4e4c-9704-8e48803b984b",
+      "name": "UniFi Access Device",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessDevice.groovy",
+      "required": true
+    },
+    {
+      "id": "3284c39b-679a-4738-a520-63e3e37f685e",
+      "name": "UniFi Access Controller",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessController.groovy",
+      "required": true
+    },
+    {
+      "id": "c148316e-65bc-47a2-a775-c941ac9db931",
+      "name": "UniFi Access Doorbell",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessDoorbell.groovy",
+      "required": true
+    },
+    {
+      "id": "02e3363d-b1fe-4632-b885-049e6e9d4115",
+      "name": "UniFi Access Events",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessEvents.groovy",
+      "required": true
+    },
+    {
+      "id": "91c32d6c-1f90-4c2e-b70d-78698aa5c523",
+      "name": "UniFi Access Request To Enter",
+      "namespace": "georgeb",
+      "location": "https://raw.githubusercontent.com/georgebashi/hubitat-unifi-access/v0.1.0/drivers/UnifiAccessRequestToEnter.groovy",
+      "required": true
+    }
+  ]
+}
