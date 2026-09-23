@@ -76,6 +76,10 @@ def updated() {
     initialize()
 }
 
+def systemStartHandler(evt) {
+    initialize()
+}
+
 def uninstalled() {
     unschedule()
     getChildDevice(eventsDni())?.closeAccessEvents()
@@ -84,6 +88,12 @@ def uninstalled() {
 
 private void initialize() {
     unschedule()
+    unsubscribe()
+    subscribe(location, "systemStart", "systemStartHandler")
+    // Recurring jobs survive a missed execution while the hub is restarting.
+    def seconds = pollSeconds()
+    schedule(seconds == 30 ? "0/30 * * * * ?" : "0 0/${seconds.intdiv(60)} * * * ?", "poll")
+    schedule("20 * * * * ?", "checkFreshness")
     state.generation = ((state.generation ?: 0) as Long) + 1L
     state.latestDoorsSequence = 0L
     state.doorsInFlight = null
@@ -111,7 +121,7 @@ private void initialize() {
     state.doorReadStatus = "pending"
     state.deviceReadStatus = "pending"
     state.initialized = true
-    getChildDevices().each { child ->
+    getChildDevices().findAll { it.deviceNetworkId != eventsDni() }.each { child ->
         if (child.currentValue("lastCommandStatus") == "pending") {
             child.setCommandStatus("indeterminate")
         }
@@ -122,15 +132,12 @@ private void initialize() {
     configureEventsChild()
     configureManagedWebhook()
     poll()
-    runIn(pollSeconds() + 20, "checkFreshness")
 }
 
 def poll() {
-    unschedule("poll")
     requestDoors()
     requestDevices()
     queueDetail("emergency", null)
-    runIn(pollSeconds(), "poll")
 }
 
 def refreshDoor(String deviceNetworkId) {
@@ -241,7 +248,6 @@ def checkFreshness() {
         markDoorsStale()
     }
     updateDoorHardwareHealth()
-    runIn(pollSeconds() + 20, "checkFreshness")
 }
 
 private boolean clearUnlock(Map context) {
@@ -466,7 +472,7 @@ private void updateDoorHardwareHealth() {
 }
 
 private void markChildrenStale() {
-    getChildDevices().each { child -> child.markStale() }
+    getChildDevices().findAll { it.deviceNetworkId != eventsDni() }.each { child -> child.markStale() }
 }
 
 private void markDoorsStale() {

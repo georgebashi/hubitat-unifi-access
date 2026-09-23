@@ -85,7 +85,7 @@ def webhookSignature(String secret, String body, long timestamp) {
 }
 
 def fixture(String relativePath, Map settings = [:], Map initialState = [:], Map options = [:]) {
-    def calls = [get: [], put: [], post: [], patch: [], events: [], notifications: [], responses: [], schedules: [], websocket: []]
+    def calls = [get: [], put: [], post: [], patch: [], events: [], notifications: [], responses: [], schedules: [], websocket: [], recurring: [:], subscriptions: []]
     def children = options.children ?: []
     def clock = options.clock ?: new FakeClock()
     def appRef = options.app ?: [id: 'test-app', label: 'Test Access']
@@ -96,6 +96,7 @@ def fixture(String relativePath, Map settings = [:], Map initialState = [:], Map
         request: options.request ?: [body: '', headers: [:]],
         log: new RecordingLog(),
         app: appRef,
+        location: [id: 'synthetic-location'],
         device: new FakeHubitatDevice(deviceNetworkId: options.dni ?: 'unifi-access:test-app:door:door-1'),
         parent: parent,
         interfaces: [webSocket: [
@@ -128,8 +129,10 @@ def fixture(String relativePath, Map settings = [:], Map initialState = [:], Map
         runIn: { Integer seconds, String method, Map runOptions = [:] ->
             calls.schedules << [seconds: seconds, method: method, options: runOptions]
         },
-        unschedule: { String method = null -> null },
-        unsubscribe: { -> null },
+        schedule: { String cron, String method -> calls.recurring[method] = cron },
+        subscribe: { Object target, String event, String handler -> calls.subscriptions << [event: event, handler: handler] },
+        unschedule: { String method = null -> method ? calls.recurring.remove(method) : calls.recurring.clear() },
+        unsubscribe: { -> calls.subscriptions.clear() },
         initialize: { -> null },
         definition: { Closure body -> body.delegate = new Expando(name: { Object ignored -> }, namespace: { Map ignored -> }); body() },
         metadata: { Closure body -> body() },
@@ -790,7 +793,36 @@ def testNestedDevicesAndMissingOffline = {
     check(hardware.events.contains('offline'), 'Previously discovered hardware absent from a successful poll must go offline.')
 }
 
+def testRestartRecovery = {
+    ['30': '0/30 * * * * ?', '60': '0 0/1 * * * ?', '120': '0 0/2 * * * ?', '300': '0 0/5 * * * ?'].each { interval, cron ->
+        // Use the production event driver: generic FakeChild wrongly provides markStale().
+        def events = fixture('drivers/UnifiAccessEvents.groovy')
+        events.binding.setVariable('deviceNetworkId', 'unifi-access:test-app:events')
+        def door = new FakeChild(deviceNetworkId: dni, values: [lastCommandStatus: 'pending'])
+        def result = newApp(appSettings + [pollInterval: interval], [door, events.script])
+        result.script.installed()
+        check(result.calls.recurring == [poll: cron, checkFreshness: '20 * * * * ?'], 'Install must create recurring monitoring jobs.')
+        check(result.calls.subscriptions == [[event: 'systemStart', handler: 'systemStartHandler']], 'App must subscribe to hub startup.')
+        check(door.values.lastCommandStatus == 'indeterminate', 'Initialization must not replay pending commands.')
+        def oldContext = result.calls.get.find { it.callback == 'doorsCallback' }.context
+        result.calls.recurring.clear()
+        result.script.systemStartHandler([name: 'systemStart'])
+        check(result.calls.recurring.poll == cron, 'Startup must restore missing jobs.')
+        check(result.calls.subscriptions.size() == 1, 'Startup must not duplicate subscriptions.')
+        result.script.doorsCallback(new FakeResponse(status: 200, data: [code: 'SUCCESS', data: []]), oldContext)
+        check(result.script.state.doorsFresh == false, 'Pre-restart callbacks must not restore freshness.')
+        result.script.poll()
+        result.script.checkFreshness()
+        check(result.calls.recurring.size() == 2, 'Polling must not remove recurring jobs.')
+        result.script.settings.apiToken = ''
+        result.script.poll()
+        check(door.values.healthStatus == 'stale', 'Invalid connection must stale hardware without calling markStale on the event driver.')
+        check(result.calls.put.isEmpty() && result.calls.post.isEmpty(), 'Recovery must not execute physical commands.')
+    }
+}
+
 [
+    'startup restores recurring monitoring with production event driver': testRestartRecovery,
     'missing door position => unknown': testDriverUnknownPosition,
     'native lock capability mapping': testNativeLockCapability,
     'unverified hardware status': testUnverifiedHardwareDevice,

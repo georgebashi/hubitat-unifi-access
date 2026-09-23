@@ -18,3 +18,13 @@ Offline tests execute production Groovy methods with Hubitat bindings stubbed. R
 ## Remaining validation
 
 Reader, Intercom, Gate, and request-to-enter paths are fixture-tested, not physically verified. Controller outage recovery on the hub, large-installation resilience, supervised control/state verification, and clean HPM installation/match-up remain release-validation work. HomeKit pairing and remote operation require user verification.
+
+## Monitoring recovery repair — 2026-09-23
+
+- Investigated unavailable commands with no scheduled app jobs after a hub restart. The original periodic monitoring used chained one-shot jobs and had no startup subscription. This is consistent with a missed one-shot execution during downtime; the precise scheduler loss mechanism is not independently proven.
+- Periodic polling and freshness checks now use recurring cron schedules. A `systemStart` subscription reinitializes monitoring, invalidates old callbacks, and clears pending commands without replaying them.
+- Initialization and connection-failure handling exclude the event-stream child from hardware `markStale()` calls; that driver does not implement the hardware health interface. The old generic child stub concealed this error.
+- Added synthetic coverage using the production event driver for all four polling intervals, startup recovery, obsolete callbacks, missing credentials, and absence of physical command requests. All 21 offline regression groups pass.
+- Corrected parent app compiled and activated on Hubitat. Fresh door/device reads, recurring jobs, startup subscription, and active webhook were verified. A subsequent scheduled poll advanced both read timestamps, both monitoring jobs recorded executions and retained their next runs, and the door reported online health. No physical command was sent. An actual reboot and physical control retest remain unverified.
+
+Scheduling references: Hubitat [Common Methods](https://docs2.hubitat.com/en/developer/common-methods-object) and [App Object](https://docs2.hubitat.com/en/developer/app-object). Hubitat's [Rule Machine documentation](https://docs2.hubitat.com/apps/rule-machine/rule-5-1) also identifies `systemStart` as a location event. Cron registration and subscription were verified on the target hub; restart behavior still requires an actual reboot test.
